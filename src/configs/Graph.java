@@ -1,12 +1,13 @@
 package configs;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import test.Agent;
 import test.Topic;
-import test.TopicManagerSingleton;
+
 import test.TopicManagerSingleton.TopicManager;
 
 
@@ -37,44 +38,45 @@ public class Graph {
 		
 		List<Topic> topics=tm.getTopics();
 		
-		//iterate over list of nodes in the graph
-		Iterator<Node> iterator=nodes.iterator();
 		
-		//add a new node for each topic
-		for(Topic topic: topics) {
-			if(!nodes.contains(topic.name)) { //check if topic wasn't added in Agent pub loop
-				//add node to graph
-				nodes.add(new Node(topic.name));
-			}
-			
-			//iterate to topic that was just added 
-			Node curNode=iterator.next();
-			
-			//add subscribers to current topic as nodes to graph, and add them as edges to that Nodes edges list
-			for (Agent sub: topic.subs) {
-				if(!nodes.contains(sub.getName()))  //check that subscriber wasnt added in Agent pub
-					//add node to graph
-					nodes.add(new Node(sub.getName()));
-				//add sub to edges list for that topic (outgoing edges in graph)
-				curNode.edges.add(new Node(sub.getName()));
-				
-				//iterate to next node in list 
-				iterator.next();
-				
-			}
-			
-			for(Agent pub: topic.pubs) {
-				if(!nodes.contains(pub.getName()))
-					nodes.add(new Node(pub.getName()));
-				
-					//iterate to pub node to add edges to it 
-					curNode=iterator.next();
-					curNode.edges.add(new Node(topic.name));
-				
-				
-			}
-		}
+		// First pass: create all nodes
+		Map<String,Node> nodeMap = new HashMap<>();
+		
+	    for (Topic topic : topics) {
+	        // Add topic node if not exists
+	        nodeMap.putIfAbsent(topic.name, new Node(topic.name));
+	        
+	        // Add subscriber nodes
+	        for (Agent sub : topic.subs) {
+	            nodeMap.putIfAbsent(sub.getName(), new Node(sub.getName()));
+	        }
+	        
+	        // Add publisher nodes  
+	        for (Agent pub : topic.pubs) {
+	            nodeMap.putIfAbsent(pub.getName(), new Node(pub.getName()));
+	        }
+	    }
+	    
+	    // Second pass: create edges
+	    for (Topic topic : topics) {
+	        Node topicNode = nodeMap.get(topic.name);
+	        
+	        // Topic -> Subscribers edges
+	        for (Agent sub : topic.subs) {
+	            topicNode.edges.add(nodeMap.get(sub.getName()));
+	        }
+	        
+	        // Publishers -> Topic edges  
+	        for (Agent pub : topic.pubs) {
+	            Node pubNode = nodeMap.get(pub.getName());
+	            pubNode.edges.add(topicNode);
+	        }
+	    }
+	    
+	    // Update the graph's node list
+	    this.nodes = new ArrayList<>(nodeMap.values());
 	}
+	
 		
 	}
 
