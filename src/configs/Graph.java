@@ -13,24 +13,25 @@ import test.TopicManagerSingleton.TopicManager;
 
 
 
-public class Graph {
+public class Graph extends ArrayList<Node> {
 
-	List<Node> nodes=new ArrayList<>();	
 	
-	public Graph(List<Node> nodes) { //Graph is a list of nodes, so must inherit a Nodes ArrayList
-		
-		// Graph must
-		this.nodes=nodes;
-	}
+	//public Graph() { //Graph is a list of nodes, so must inherit a Nodes ArrayList
+		//super();
+	//}
 	
-	public boolean hasCycles() {
-		for(Node node : nodes) {
-			if(node.hasCycles()==true) {
-				return true;
-			}
-		}
-		return false;
-	}
+	 public Graph(List<Node> nodes) {
+	        super(nodes);
+	    }
+	
+	 public boolean hasCycles() {
+	        for (Node node : this) {
+	            if (node.hasCycles()) {
+	                return true;
+	            }
+	        }
+	        return false;
+	    }
 	
 	public void createFromTopics(TopicManager tm) { //TopicManager contains hashmap of topics (topicName mapped to topic)
 	
@@ -43,38 +44,46 @@ public class Graph {
 		Map<String,Node> nodeMap = new HashMap<>();
 		
 	    for (Topic topic : topics) {
-	        // Add topic node if not exists
-	        nodeMap.putIfAbsent(topic.name, new Node(topic.name));
+	    	// Add topic node with "T" prefix
+            String topicNodeName = "T" + topic.name;
+            nodeMap.putIfAbsent(topicNodeName, new Node(topicNodeName));
 	        
-	        // Add subscriber nodes
+            // Add subscriber nodes with "A" prefix
 	        for (Agent sub : topic.subs) {
-	            nodeMap.putIfAbsent(sub.getName(), new Node(sub.getName()));
+	        	String subNodeName = "A" + sub.getName();
+                nodeMap.putIfAbsent(subNodeName, new Node(subNodeName));
 	        }
 	        
 	        // Add publisher nodes  
 	        for (Agent pub : topic.pubs) {
-	            nodeMap.putIfAbsent(pub.getName(), new Node(pub.getName()));
+	        	String pubNodeName = "A" + pub.getName();
+                nodeMap.putIfAbsent(pubNodeName, new Node(pubNodeName));
 	        }
 	    }
 	    
 	    // Second pass: create edges
 	    for (Topic topic : topics) {
-	        Node topicNode = nodeMap.get(topic.name);
+	    	String topicNodeName = "T" + topic.name;
+            Node topicNode = nodeMap.get(topicNodeName);
 	        
 	        // Topic -> Subscribers edges
 	        for (Agent sub : topic.subs) {
-	            topicNode.edges.add(nodeMap.get(sub.getName()));
+	        	String subNodeName = "A" + sub.getName();
+	        	Node subNode = nodeMap.get(subNodeName);
+                topicNode.addEdge(subNode);
 	        }
 	        
 	        // Publishers -> Topic edges  
 	        for (Agent pub : topic.pubs) {
-	            Node pubNode = nodeMap.get(pub.getName());
-	            pubNode.edges.add(topicNode);
+	        	String pubNodeName = "A" + pub.getName();
+                Node pubNode = nodeMap.get(pubNodeName);
+                pubNode.addEdge(topicNode);
 	        }
 	    }
 	    
-	    // Update the graph's node list
-	    this.nodes = new ArrayList<>(nodeMap.values());
+	 // Clear current graph and add all nodes
+        this.clear();
+        this.addAll(nodeMap.values());
 	}
 	
 		
